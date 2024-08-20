@@ -1,0 +1,37 @@
+# Grafana cannot report the value of sensor.uptime integration by Home Assistant
+# Build a Template Sensor to calculate the uptime of Home Assistant in seconds
+# Credits to https://community.home-assistant.io/t/how-to-convert-time-format-to-float/618814/2
+# Credits to https://community.home-assistant.io/t/uptime-sensor-not-showing-minutes-anymore/260497/12
+
+# Step 1 - Define 'sensor.ha_uptime' in configuration.yaml
+sensor:
+  - platform: template
+    sensors:
+      ha_uptime:
+        value_template: >
+          {{ utcnow() - states('sensor.uptime') | as_datetime }}
+
+# Step 2 - Go to Settings> Devices & services> Helpers to create a Template sensor
+{# Code to be used for Template Sensor 'sensor.ha_uptime_seconds' #}
+{% set time_str = states('sensor.ha_uptime') %}
+{% if "days" in time_str %} {# replace 'days' in ha_uptime #}
+  {% set time_str = time_str | replace("days, ", ":") %}
+{% elif "day" in time_str %} {# replace 'day' in ha_uptime #}
+  {% set time_str = time_str | replace("day, ", ":") %}
+{% endif %}
+{% set time_parts = time_str.split(":") %} {# split time_str into different an array #}
+{% if time_parts[3] %} {# if more than 24hrs , then time_parts array will have element 3#}
+  {% set days = time_parts[0] | int %}
+  {% set hours = time_parts[1] | int %}
+  {% set minutes = time_parts[2] | int %}
+  {% set seconds = time_parts[3] | int %}
+  {% set time_decimal = (days*86400) + (hours*3600) + (minutes*60) + seconds %}
+  {{ time_decimal }}
+{% else %} {# if less than a day, then time_part array will only have element 0,1,2 #}
+  {% set hours = time_parts[0] | int %}
+  {% set minutes = time_parts[1] | int %}
+  {% set seconds = time_parts[2] | int %}
+  {% set time_decimal = (hours*3600) + (minutes*60) + seconds %}
+  {{ time_decimal }}
+{% endif %}
+{# End of Template Sensor 'sensor.ha_uptime_seconds' #}
